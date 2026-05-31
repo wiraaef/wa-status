@@ -1,0 +1,22 @@
+{
+  "name": "vivobook-pro-15-oled",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@sparticuz/chromium": "^147.0.1",
+    "express": "^5.2.1",
+    "node-fetch": "^3.3.2",
+    "open-graph-scraper": "^6.11.0",
+    "puppeteer": "^24.40.0",
+    "puppeteer-core": "^24.42.0",
+    "youtube-sr": "^4.3.12"
+  }
+}

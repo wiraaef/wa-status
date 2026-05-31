@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <title>WA Status Generator</title>
+
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Segoe UI", sans-serif;
+        background: #0f0f0f;
+        color: white;
+      }
+
+      /* ===== LAYOUT ===== */
+      .container {
+        display: flex;
+        height: 100vh;
+      }
+
+      /* ===== LEFT PANEL ===== */
+      .left {
+        width: 350px;
+        padding: 20px;
+        border-right: 1px solid #222;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .panel {
+        width: 100%;
+        max-width: 300px;
+      }
+
+      /* ===== RIGHT PREVIEW ===== */
+      .right {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      /* ===== PREVIEW BOX ===== */
+      .preview {
+        width: 280px;
+        height: 500px;
+        border-radius: 20px;
+        overflow: hidden;
+        background: black;
+        border: 2px dashed #333;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .preview img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      /* ===== TABS ===== */
+      .tabs {
+        display: flex;
+        gap: 5px;
+        margin-bottom: 15px;
+      }
+
+      .tabs button {
+        flex: 1;
+        padding: 8px;
+        border-radius: 20px;
+        border: none;
+        background: #2a2a2a;
+        color: white;
+        cursor: pointer;
+      }
+
+      .tabs button.active {
+        background: #25d366;
+      }
+
+      /* ===== INPUT ===== */
+      input {
+        width: 100%;
+        padding: 10px;
+        border-radius: 12px;
+        border: none;
+        margin-bottom: 10px;
+      }
+
+      /* ===== PRESET ===== */
+      .preset {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+        margin: 10px 0;
+      }
+
+      .preset button {
+        padding: 6px 12px;
+        border-radius: 10px;
+        border: none;
+        background: #333;
+        color: white;
+        cursor: pointer;
+      }
+
+      /* ===== ACTION ===== */
+      .actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 10px;
+      }
+
+      .actions button {
+        flex: 1;
+        padding: 10px;
+        border-radius: 10px;
+        border: none;
+        font-weight: bold;
+        cursor: pointer;
+      }
+
+      .generate {
+        background: #25d366;
+      }
+
+      .download {
+        background: #008cff;
+      }
+
+      /* ===== LOADING ===== */
+      .loading {
+        width: 40px;
+        height: 40px;
+        border: 4px solid #333;
+        border-top: 4px solid #25d366;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+
+      @keyframes spin {
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <!-- LEFT PANEL -->
+      <div class="left">
+        <div class="panel">
+          <h2 style="margin-bottom: 15px; text-align: center">WA Generator</h2>
+
+          <input type="text" id="url" placeholder="Masukkan URL..." />
+
+          <div class="preset">
+            <button onclick="generatePreset(1)">Pro 1</button>
+            <button onclick="generatePreset(2)">Pro 2</button>
+            <button onclick="generatePreset(3)">Pro 4</button>
+          </div>
+
+          <div class="actions">
+            <button class="generate" onclick="generate()">Generate</button>
+            <button class="download" onclick="downloadImage()">Download</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT PREVIEW -->
+      <div class="right">
+        <div class="preview" id="preview">
+          <span style="opacity: 0.5">Preview di sini</span>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      let currentImageBlob = null;
+
+      // generate dari input
+      async function generate() {
+        let url = document.getElementById("url").value;
+
+        if (!url) {
+          alert("Masukkan URL dulu!");
+          return;
+        }
+
+        await sendToServer({
+          type: "text",
+          url,
+        });
+      }
+
+      // preset auto
+      async function generatePreset(type) {
+        let template = "";
+
+        if (type === 1) template = "pro1.png";
+        if (type === 2) template = "pro2.png";
+        if (type === 3) template = "pro4.png";
+
+        await sendToServer({
+          type: "preset",
+          template: template,
+        });
+      }
+
+      // send ke backend
+      async function sendToServer(data) {
+        const preview = document.getElementById("preview");
+
+        preview.innerHTML = `<div class="loading"></div>`;
+
+        try {
+          const res = await fetch("/generate", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(data),
+          });
+
+          if (!res.ok) {
+            const err = await res.text();
+
+            preview.innerHTML = `
+          <div style="padding:20px;color:white">
+            ERROR:<br>${err}
+          </div>
+        `;
+
+            return;
+          }
+
+          const blob = await res.blob();
+
+          currentImageBlob = blob;
+
+          const imageUrl = URL.createObjectURL(blob);
+
+          preview.innerHTML = `<img src="${imageUrl}">`;
+        } catch (err) {
+          console.error(err);
+
+          preview.innerHTML = `
+        <div style="padding:20px;color:red">
+          Gagal koneksi server
+        </div>
+      `;
+        }
+      }
+
+      // download
+      function downloadImage() {
+        if (!currentImageBlob) {
+          alert("Generate dulu!");
+          return;
+        }
+
+        const name = prompt("Nama file:", "status.png");
+
+        if (!name) return;
+
+        const url = URL.createObjectURL(currentImageBlob);
+
+        const a = document.createElement("a");
+
+        a.href = url;
+        a.download = name;
+
+        a.click();
+      }
+    </script>
+  </body>
+</html>
